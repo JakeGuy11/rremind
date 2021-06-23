@@ -3,6 +3,28 @@ extern crate notify_rust;
 
 use notify_rust::Notification;
 
+// Take a nw-nd-nh-nm-ns and return the seconds
+fn countdown_to_seconds(req_time: &String) -> u64
+{
+    let mut total_secs: u64 = 0;
+
+    for seg in req_time.split("-")
+    {
+        let mut checkable_seg = seg.to_string();
+        let date_id = checkable_seg.pop().unwrap_or('m');
+        match date_id
+        {
+            'w' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 604800; },
+            'd' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 86400; },
+            'h' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 3600; },
+            'm' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 60; },
+            's' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0); },
+            _ => { eprintln! ("DateTime identifier '{}' not recognized, ignoring option!", date_id); }
+        }
+    }
+    total_secs
+}
+
 // The user has selected instant mode
 fn queue_instant()
 {
@@ -24,11 +46,11 @@ fn queue_instant()
             "-s" => { notif["title"] = json::JsonValue::String(args[i+1].to_string()); },
             "-b" => { notif["body"] = json::JsonValue::String(args[i+1].to_string()); },
             "-i" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
-            "-u" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into());},
+            "-u" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into()); },
+            "-t" => { notif["time"] = json::JsonValue::Number(countdown_to_seconds(&args[i+1]).into()); },
             _ => {  }
         }
     }
-    println! ("{:?}", notif);
 }
 
 // This function will start the periodic loop that checks for notifications
