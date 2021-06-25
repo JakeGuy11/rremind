@@ -31,8 +31,6 @@ fn countdown_to_seconds(req_time: &String) -> u64
 
 fn instant_notif(notif: json::JsonValue)
 {
-    println! ("Notification details:\nTitle: {}\nBody: {}\nIcon Location: {}\nUrgency Level: {}\nSending in {} seconds...", notif["title"], notif["body"], notif["icon"], notif["urgency"], notif["time"]);
-    println! ("pwd: {}", std::str::from_utf8(&std::process::Command::new("pwd").output().expect("pwd failed").stdout).expect("utf conversion failed"));
     async_process::Command::new(INSTANT_RREMIND_PATH).arg(notif.dump()).spawn().unwrap();
 }
 
