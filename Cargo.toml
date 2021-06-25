@@ -7,4 +7,5 @@ edition = "2018"
 
 [dependencies]
 json="0.12.4"
+async-process="1.1.0"
 notify-rust="4.5.2"
