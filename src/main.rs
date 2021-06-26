@@ -81,9 +81,18 @@ fn start_loop(entry_dir: &std::path::PathBuf)
     loop
     {
         //First, iterate through all the files in the config dir
-        for current_entry in std::fs::read_dir(entry_dir.as_path()).unwrap()
+        for current_entry_attempt in std::fs::read_dir(entry_dir.as_path()).unwrap()
         {
-            println! ("{:?}", current_entry.unwrap().path());
+            let mut current_entry = match current_entry_attempt
+            {
+                Ok(..) => { 
+                    let unwrapped_item = current_entry_attempt.unwrap();
+                    if unwrapped_item.path().is_dir() { continue; }
+                    else { unwrapped_item.path() }
+                },
+                Err(..) => { continue; }
+            };
+            println! ("{:?}", current_entry.is_dir());
         }
     }
 }
