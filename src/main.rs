@@ -4,11 +4,10 @@ extern crate async_process;
 extern crate notify_rust;
 extern crate home;
 
-use notify_rust::Notification;
-use crate::chrono::Timelike;
+//use notify_rust::Notification;
+use std::io::Write;
 
 // Any globals
-const INSTANT_RREMIND_PATH: &str = "./instant_rremind";
 const RREMIND_SUFFIX: &str = ".rremind";
 
 // Take a nw-nd-nh-nm-ns and return the seconds
@@ -39,7 +38,8 @@ fn instant_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
     let mut entry_name = std::fs::read_dir(&entry_dir).unwrap().count().to_string();
     entry_name.push_str(RREMIND_SUFFIX);
     entry_dir.push(entry_name);
-    println! ("{:?}", entry_dir);
+    let mut entry_file = std::fs::File::create(&entry_dir).unwrap();
+    entry_file.write_all(notif.dump().as_bytes()).unwrap();
     //async_process::Command::new(INSTANT_RREMIND_PATH).arg(notif.dump()).spawn().unwrap();
 }
 
@@ -89,9 +89,6 @@ fn main()
     home_dir.push("share");
     home_dir.push("rremind");
     println! ("{:?}", home_dir);
-
-    let (twelvehour, datetime) = chrono::Local::now().hour12();
-    println! ("date time is {},{}", twelvehour, datetime);
 
     // Check if we want to start in add or start mode
     let intent = std::env::args().nth(1).unwrap_or(String::from("start"));
