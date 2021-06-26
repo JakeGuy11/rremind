@@ -40,6 +40,7 @@ fn instant_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
     entry_dir.push(entry_name);
     let mut entry_file = std::fs::File::create(&entry_dir).unwrap();
     entry_file.write_all(notif.dump().as_bytes()).unwrap();
+    async_process::Command::new("./rremind").arg("start").spawn().expect("failed to start as daemon!");
     //async_process::Command::new(INSTANT_RREMIND_PATH).arg(notif.dump()).spawn().unwrap();
 }
 
@@ -77,24 +78,29 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
 // This function will start the periodic loop that checks for notifications
 fn start_loop(entry_dir: &std::path::PathBuf)
 {
-    println! ("Once start is implemented, it will be here");
-    std::process::exit(0);
+    loop
+    {
+        //First, iterate through all the files in the config dir
+        for current_entry in std::fs::read_dir(entry_dir.as_path()).unwrap()
+        {
+            println! ("{:?}", current_entry.unwrap().path());
+        }
+    }
 }
 
 fn main()
 {
     // Set the entry dir
-    let mut home_dir = home::home_dir().unwrap();
-    home_dir.push(".local");
-    home_dir.push("share");
-    home_dir.push("rremind");
-    println! ("{:?}", home_dir);
+    let mut entry_dir = home::home_dir().unwrap();
+    entry_dir.push(".local");
+    entry_dir.push("share");
+    entry_dir.push("rremind");
 
     // Check if we want to start in add or start mode
     let intent = std::env::args().nth(1).unwrap_or(String::from("start"));
 
     // If the user wants to start, call start_loop
-    if &intent == "start" { start_loop(&home_dir); }
+    if &intent == "start" { start_loop(&entry_dir); }
     else if &intent != "add" { eprintln! ("You must define a valid intent!"); std::process::exit(1); }
 
     // Check what add mode they want to use
@@ -104,7 +110,7 @@ fn main()
     match mode.as_str()
     {
         "s" => { println! ("You've selected single mode"); },
-        "i" => { queue_instant(&mut home_dir); },
+        "i" => { queue_instant(&mut entry_dir); },
         "r" => { println! ("You've selected reccurant mode"); },
         _ => { println! ("Please enter a valid mode"); }
     }
