@@ -6,7 +6,7 @@ extern crate home;
 
 //use notify_rust::Notification;
 use chrono::{Datelike, Timelike};
-use std::io::Write;
+use std::io::{Read, Write};
 
 // Any globals
 const RREMIND_SUFFIX: &str = ".rremind";
@@ -91,7 +91,7 @@ fn start_loop(entry_dir: &std::path::PathBuf)
         //First, iterate through all the files in the config dir
         for current_entry_attempt in std::fs::read_dir(entry_dir.as_path()).unwrap()
         {
-            let mut current_entry = match current_entry_attempt
+            let current_entry = match current_entry_attempt
             {
                 Ok(..) => { 
                     let unwrapped_item = current_entry_attempt.unwrap();
@@ -100,8 +100,12 @@ fn start_loop(entry_dir: &std::path::PathBuf)
                 },
                 Err(..) => { continue; }
             };
-            println! ("{:?}", current_entry.is_dir());
+            let mut current_file = std::fs::File::open(current_entry.as_path()).unwrap();
+            let mut result_string = String::new();
+            current_file.read_to_string(&mut result_string);
+            println! ("{:?}", result_string);
         }
+        std::thread::sleep(std::time::Duration::from_millis(900));
     }
 }
 
