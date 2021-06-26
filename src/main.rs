@@ -103,7 +103,11 @@ fn start_loop(entry_dir: &std::path::PathBuf)
             let mut current_file = std::fs::File::open(current_entry.as_path()).unwrap();
             let mut result_string = String::new();
             current_file.read_to_string(&mut result_string);
-            println! ("{:?}", result_string);
+            
+            let notif_read = json::parse(&result_string);
+            if let Err(e) = notif_read { eprintln! ("Failed to read contents: {}", e); continue; }
+            let notif = notif_read.unwrap();
+            println! ("time is {}", notif["time"].to_string());
         }
         std::thread::sleep(std::time::Duration::from_millis(900));
     }
