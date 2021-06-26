@@ -5,13 +5,14 @@ extern crate notify_rust;
 extern crate home;
 
 //use notify_rust::Notification;
+use chrono::{Datelike, Timelike};
 use std::io::Write;
 
 // Any globals
 const RREMIND_SUFFIX: &str = ".rremind";
 
 // Take a nw-nd-nh-nm-ns and return the seconds
-fn countdown_to_seconds(req_time: &String) -> u64
+fn countdown_to_time(req_time: &String) -> String
 {
     let mut total_secs: u64 = 0;
 
@@ -29,7 +30,13 @@ fn countdown_to_seconds(req_time: &String) -> u64
             _ => { eprintln! ("DateTime identifier '{}' not recognized, ignoring option!", date_id); }
         }
     }
-    total_secs
+
+    // Now we have the total seconds - add it to the time now and format it properly
+    let target_time = chrono::Local::now() + chrono::Duration::seconds(total_secs as i64);
+
+    let formatted_datetime = format! ("{}_{}_{}-{}_{}_{}", target_time.year(), target_time.month(), target_time.day(), target_time.hour(), target_time.minute(), target_time.second());
+
+    formatted_datetime
 }
 
 fn instant_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
@@ -55,7 +62,7 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
         body: "You did not set any body text for this reminder",
         icon: "/home/jake/downloads/ogayu.jpg",
         urgency: 1,
-        time: -1
+        time: "nah"
     };
 
     for i in 0..args.len()
@@ -66,13 +73,14 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
             "-b" => { notif["body"] = json::JsonValue::String(args[i+1].to_string()); },
             "-i" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
             "-u" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into()); },
-            "-t" => { notif["time"] = json::JsonValue::Number(countdown_to_seconds(&args[i+1]).into()); },
+            "-t" => { notif["time"] = json::JsonValue::String(countdown_to_time(&args[i+1])); },
             _ => {  }
         }
     }
     
-    if notif["time"].as_i64().unwrap() < 10 { eprintln! ("You cannot select a time lower than 10 seconds."); }
-    else { instant_notif(notif, entry_dir); }
+    //if notif["time"].as_i64().unwrap() < 10 { eprintln! ("You cannot select a time lower than 10 seconds."); }
+    //else { instant_notif(notif, entry_dir); }
+    instant_notif(notif, entry_dir);
 }
 
 // This function will start the periodic loop that checks for notifications
