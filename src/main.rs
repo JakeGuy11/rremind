@@ -5,7 +5,7 @@ extern crate notify_rust;
 extern crate home;
 
 //use notify_rust::Notification;
-use chrono::{Datelike, Timelike};
+use chrono::{Datelike, Timelike, TimeZone};
 use std::io::{Read, Write};
 
 // Any globals
@@ -34,7 +34,7 @@ fn countdown_to_time(req_time: &String) -> String
     // Now we have the total seconds - add it to the time now and format it properly
     let target_time = chrono::Local::now() + chrono::Duration::seconds(total_secs as i64);
 
-    let formatted_datetime = format! ("{}_{}_{}-{}_{}_{}", target_time.year(), target_time.month(), target_time.day(), target_time.hour(), target_time.minute(), target_time.second());
+    let formatted_datetime = format! ("{}_{}_{}_{}_{}_{}", target_time.year(), target_time.month(), target_time.day(), target_time.hour(), target_time.minute(), target_time.second());
 
     formatted_datetime
 }
@@ -102,12 +102,20 @@ fn start_loop(entry_dir: &std::path::PathBuf)
             };
             let mut current_file = std::fs::File::open(current_entry.as_path()).unwrap();
             let mut result_string = String::new();
-            current_file.read_to_string(&mut result_string);
+            current_file.read_to_string(&mut result_string).unwrap();
             
             let notif_read = json::parse(&result_string);
             if let Err(e) = notif_read { eprintln! ("Failed to read contents: {}", e); continue; }
             let notif = notif_read.unwrap();
-            println! ("time is {}", notif["time"].to_string());
+            
+            // Check if it's time to notify
+            let time_string = notif["time"].to_string();
+            let time_vec = time_string.split("_").collect::<Vec<&str>>();
+            
+            let wanted_date = chrono::Local.ymd(time_vec[0].parse::<i32>().expect("Failed to parse year"), time_vec[1].parse::<u32>().expect("Failed to parse month"), time_vec[2].parse::<u32>().expect("Failed to parse day")).and_hms(time_vec[3].parse::<u32>().expect("Failed to parse hour"), time_vec[4].parse::<u32>().expect("Failed to parse minute"), time_vec[5].parse::<u32>().expect("Failed to parse seconds"));
+            
+            println! ("is it now? {}", wanted_date.timestamp() == chrono::Local::now().timestamp());
+            println! ("is {:?} the same as {:?}?", wanted_date.timestamp(), chrono::Local::now().timestamp());
         }
         std::thread::sleep(std::time::Duration::from_millis(900));
     }
