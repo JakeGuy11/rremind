@@ -1,11 +1,15 @@
+extern crate chrono;
 extern crate json;
 extern crate async_process;
 extern crate notify_rust;
+extern crate home;
 
 use notify_rust::Notification;
+use crate::chrono::Timelike;
 
 // Any globals
 const INSTANT_RREMIND_PATH: &str = "./instant_rremind";
+const RREMIND_SUFFIX: &str = ".rremind";
 
 // Take a nw-nd-nh-nm-ns and return the seconds
 fn countdown_to_seconds(req_time: &String) -> u64
@@ -29,13 +33,18 @@ fn countdown_to_seconds(req_time: &String) -> u64
     total_secs
 }
 
-fn instant_notif(notif: json::JsonValue)
+fn instant_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
 {
-    async_process::Command::new(INSTANT_RREMIND_PATH).arg(notif.dump()).spawn().unwrap();
+    std::fs::create_dir_all(&entry_dir).unwrap();
+    let mut entry_name = std::fs::read_dir(&entry_dir).unwrap().count().to_string();
+    entry_name.push_str(RREMIND_SUFFIX);
+    entry_dir.push(entry_name);
+    println! ("{:?}", entry_dir);
+    //async_process::Command::new(INSTANT_RREMIND_PATH).arg(notif.dump()).spawn().unwrap();
 }
 
 // The user has selected instant mode
-fn queue_instant()
+fn queue_instant(entry_dir: &mut std::path::PathBuf)
 {
     let args: Vec<String> = std::env::args().skip(3).collect();
 
@@ -62,11 +71,11 @@ fn queue_instant()
     }
     
     if notif["time"].as_i64().unwrap() < 10 { eprintln! ("You cannot select a time lower than 10 seconds."); }
-    else { instant_notif(notif); }
+    else { instant_notif(notif, entry_dir); }
 }
 
 // This function will start the periodic loop that checks for notifications
-fn start_loop()
+fn start_loop(entry_dir: &std::path::PathBuf)
 {
     println! ("Once start is implemented, it will be here");
     std::process::exit(0);
@@ -74,11 +83,21 @@ fn start_loop()
 
 fn main()
 {
+    // Set the entry dir
+    let mut home_dir = home::home_dir().unwrap();
+    home_dir.push(".local");
+    home_dir.push("share");
+    home_dir.push("rremind");
+    println! ("{:?}", home_dir);
+
+    let (twelvehour, datetime) = chrono::Local::now().hour12();
+    println! ("date time is {},{}", twelvehour, datetime);
+
     // Check if we want to start in add or start mode
     let intent = std::env::args().nth(1).unwrap_or(String::from("start"));
 
     // If the user wants to start, call start_loop
-    if &intent == "start" { start_loop(); }
+    if &intent == "start" { start_loop(&home_dir); }
     else if &intent != "add" { eprintln! ("You must define a valid intent!"); std::process::exit(1); }
 
     // Check what add mode they want to use
@@ -88,7 +107,7 @@ fn main()
     match mode.as_str()
     {
         "s" => { println! ("You've selected single mode"); },
-        "i" => { queue_instant(); },
+        "i" => { queue_instant(&mut home_dir); },
         "r" => { println! ("You've selected reccurant mode"); },
         _ => { println! ("Please enter a valid mode"); }
     }
