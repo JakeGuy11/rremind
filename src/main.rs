@@ -60,7 +60,9 @@ fn queue_instant()
             _ => {  }
         }
     }
-    instant_notif(notif);
+    
+    if notif["time"].as_i64().unwrap() < 10 { eprintln! ("You cannot select a time lower than 10 seconds."); }
+    else { instant_notif(notif); }
 }
 
 // This function will start the periodic loop that checks for notifications
