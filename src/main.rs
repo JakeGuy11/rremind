@@ -4,7 +4,6 @@ extern crate async_process;
 extern crate notify_rust;
 extern crate home;
 
-//use notify_rust::Notification;
 use chrono::{Datelike, Timelike, TimeZone};
 use std::io::{Read, Write};
 
@@ -47,8 +46,7 @@ fn instant_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
     entry_dir.push(entry_name);
     let mut entry_file = std::fs::File::create(&entry_dir).unwrap();
     entry_file.write_all(notif.dump().as_bytes()).unwrap();
-    async_process::Command::new("./rremind").arg("start").spawn().expect("failed to start as daemon!");
-    //async_process::Command::new(INSTANT_RREMIND_PATH).arg(notif.dump()).spawn().unwrap();
+    queue_start(true, entry_dir);
 }
 
 // The user has selected instant mode
@@ -62,7 +60,7 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
         body: "You did not set any body text for this reminder",
         icon: "/home/jake/downloads/ogayu.jpg",
         urgency: 1,
-        time: "nah"
+        time: "120"
     };
 
     for i in 0..args.len()
@@ -81,6 +79,18 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
     //if notif["time"].as_i64().unwrap() < 10 { eprintln! ("You cannot select a time lower than 10 seconds."); }
     //else { instant_notif(notif, entry_dir); }
     instant_notif(notif, entry_dir);
+}
+
+fn queue_start(is_async: bool, entry_dir: &std::path::PathBuf)
+{
+    let pgrep_out = String::from_utf8(std::process::Command::new("pgrep").arg("rremind").output().expect("failed to pgrep").stdout).unwrap();
+    let mut split_pgrep = pgrep_out.split("\n").filter(|i|i != &"").collect::<Vec<&str>>();
+    split_pgrep.pop();
+
+    for pid in split_pgrep.into_iter() { std::process::Command::new("kill").arg(pid).spawn(); }
+
+    if is_async { async_process::Command::new("./rremind").arg("start").spawn().expect("failed to start as daemon!"); std::process::exit(0); }
+    else { start_loop(entry_dir); }
 }
 
 // This function will start the periodic loop that checks for notifications
@@ -113,9 +123,19 @@ fn start_loop(entry_dir: &std::path::PathBuf)
             let time_vec = time_string.split("_").collect::<Vec<&str>>();
             
             let wanted_date = chrono::Local.ymd(time_vec[0].parse::<i32>().expect("Failed to parse year"), time_vec[1].parse::<u32>().expect("Failed to parse month"), time_vec[2].parse::<u32>().expect("Failed to parse day")).and_hms(time_vec[3].parse::<u32>().expect("Failed to parse hour"), time_vec[4].parse::<u32>().expect("Failed to parse minute"), time_vec[5].parse::<u32>().expect("Failed to parse seconds"));
+            let is_time = wanted_date.timestamp() <= chrono::Local::now().timestamp();
             
-            println! ("is it now? {}", wanted_date.timestamp() == chrono::Local::now().timestamp());
-            println! ("is {:?} the same as {:?}?", wanted_date.timestamp(), chrono::Local::now().timestamp());
+            if is_time
+            {
+                let req_urgency = match &notif["urgency"].as_i8().unwrap_or(1)
+                {
+                    2 => notify_rust::Urgency::Normal,
+                    3 => notify_rust::Urgency::Critical,
+                    _ => notify_rust::Urgency::Low
+                };
+                notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
+                std::fs::remove_file(current_entry.as_path()).unwrap();
+            }
         }
         std::thread::sleep(std::time::Duration::from_millis(900));
     }
@@ -133,7 +153,7 @@ fn main()
     let intent = std::env::args().nth(1).unwrap_or(String::from("start"));
 
     // If the user wants to start, call start_loop
-    if &intent == "start" { start_loop(&entry_dir); }
+    if &intent == "start" { queue_start(false, &entry_dir); }
     else if &intent != "add" { eprintln! ("You must define a valid intent!"); std::process::exit(1); }
 
     // Check what add mode they want to use
