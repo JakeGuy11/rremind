@@ -80,7 +80,7 @@ fn queue_single(entry_dir: &mut std::path::PathBuf)
 fn write_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
 {
     std::fs::create_dir_all(&entry_dir).unwrap();
-    let mut entry_name = std::fs::read_dir(&entry_dir).unwrap().count().to_string();
+    let mut entry_name = notif["title"].to_string() + "." + &chrono::Local::now().timestamp().to_string();
     entry_name.push_str(RREMIND_SUFFIX);
     entry_dir.push(entry_name);
     let mut entry_file = std::fs::File::create(&entry_dir).unwrap();
