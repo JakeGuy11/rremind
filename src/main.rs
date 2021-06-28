@@ -38,15 +38,53 @@ fn countdown_to_time(req_time: &String) -> String
     formatted_datetime
 }
 
-fn instant_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
+fn queue_single(entry_dir: &mut std::path::PathBuf)
+{
+    let args: Vec<String> = std::env::args().skip(3).collect();
+
+    let mut notif = json::object!
+    {
+        title: "rremind",
+        body: "You did not set any body text for this reminder",
+        icon: "/home/jake/downloads/ogayu.jpg",
+        urgency: 1,
+        time: "120"
+    };
+
+    let mut target_datetime = [chrono::Local::now().year() as u32, chrono::Local::now().month(), chrono::Local::now().day(), chrono::Local::now().hour(), chrono::Local::now().minute(), chrono::Local::now().second()];
+
+    for i in 0..args.len()
+    {
+        match args[i].as_str()
+        {
+            "-t" => { notif["title"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-b" => { notif["body"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-i" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-u" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into()); },
+            "-y" => { target_datetime[0] = args[i+1].parse::<u32>().expect("Failed to parse year!"); },
+            "-o" => { target_datetime[1] = args[i+1].parse::<u32>().expect("Failed to parse month!"); },
+            "-d" => { target_datetime[2] = args[i+1].parse::<u32>().expect("Failed to parse day!"); },
+            "-h" => { target_datetime[3] = args[i+1].parse::<u32>().expect("Failed to parse hour!"); },
+            "-m" => { target_datetime[4] = args[i+1].parse::<u32>().expect("Failed to parse minute!"); },
+            "-s" => { target_datetime[5] = args[i+1].parse::<u32>().expect("Failed to parse second!"); },
+            _ => {  }
+        }
+    }
+
+    notif["time"] = json::JsonValue::String(format! ("{}_{}_{}_{}_{}_{}", target_datetime[0], target_datetime[1], target_datetime[2], target_datetime[3], target_datetime[4], target_datetime[5]));
+
+    write_notif(notif, entry_dir);
+
+}
+
+fn write_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
 {
     std::fs::create_dir_all(&entry_dir).unwrap();
     let mut entry_name = std::fs::read_dir(&entry_dir).unwrap().count().to_string();
     entry_name.push_str(RREMIND_SUFFIX);
     entry_dir.push(entry_name);
     let mut entry_file = std::fs::File::create(&entry_dir).unwrap();
-    entry_file.write_all(notif.dump().as_bytes()).unwrap();
-    queue_start(true, entry_dir);
+    entry_file.write_all(notif.dump().as_bytes()).unwrap();    
 }
 
 // The user has selected instant mode
@@ -76,9 +114,8 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
         }
     }
     
-    //if notif["time"].as_i64().unwrap() < 10 { eprintln! ("You cannot select a time lower than 10 seconds."); }
-    //else { instant_notif(notif, entry_dir); }
-    instant_notif(notif, entry_dir);
+    write_notif(notif, entry_dir);
+    queue_start(true, entry_dir);
 }
 
 fn queue_start(is_async: bool, entry_dir: &std::path::PathBuf)
@@ -87,7 +124,7 @@ fn queue_start(is_async: bool, entry_dir: &std::path::PathBuf)
     let mut split_pgrep = pgrep_out.split("\n").filter(|i|i != &"").collect::<Vec<&str>>();
     split_pgrep.pop();
 
-    for pid in split_pgrep.into_iter() { std::process::Command::new("kill").arg(pid).spawn(); }
+    for pid in split_pgrep.into_iter() { std::process::Command::new("kill").arg(pid).spawn().expect("Failed to kill existing instance of rremind!"); }
 
     if is_async { async_process::Command::new("./rremind").arg("start").spawn().expect("failed to start as daemon!"); std::process::exit(0); }
     else { start_loop(entry_dir); }
@@ -162,7 +199,7 @@ fn main()
     // Check what they want to do
     match mode.as_str()
     {
-        "s" => { println! ("You've selected single mode"); },
+        "s" => { queue_single(&mut entry_dir); },
         "i" => { queue_instant(&mut entry_dir); },
         "r" => { println! ("You've selected reccurant mode"); },
         _ => { println! ("Please enter a valid mode"); }
