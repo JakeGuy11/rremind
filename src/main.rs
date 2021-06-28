@@ -57,16 +57,16 @@ fn queue_single(entry_dir: &mut std::path::PathBuf)
     {
         match args[i].as_str()
         {
-            "-t" => { notif["title"] = json::JsonValue::String(args[i+1].to_string()); },
-            "-b" => { notif["body"] = json::JsonValue::String(args[i+1].to_string()); },
-            "-i" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
-            "-u" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into()); },
-            "-y" => { target_datetime[0] = args[i+1].parse::<u32>().expect("Failed to parse year!"); },
-            "-o" => { target_datetime[1] = args[i+1].parse::<u32>().expect("Failed to parse month!"); },
-            "-d" => { target_datetime[2] = args[i+1].parse::<u32>().expect("Failed to parse day!"); },
-            "-h" => { target_datetime[3] = args[i+1].parse::<u32>().expect("Failed to parse hour!"); },
-            "-m" => { target_datetime[4] = args[i+1].parse::<u32>().expect("Failed to parse minute!"); },
-            "-s" => { target_datetime[5] = args[i+1].parse::<u32>().expect("Failed to parse second!"); },
+            "-t" | "--title" => { notif["title"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-b" | "--body" => { notif["body"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-i" | "--icon" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-u" | "--urgency" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into()); },
+            "-y" | "--year" => { target_datetime[0] = args[i+1].parse::<u32>().expect("Failed to parse year!"); },
+            "-o" | "--month" => { target_datetime[1] = args[i+1].parse::<u32>().expect("Failed to parse month!"); },
+            "-d" | "--day" => { target_datetime[2] = args[i+1].parse::<u32>().expect("Failed to parse day!"); },
+            "-h" | "--hour" => { target_datetime[3] = args[i+1].parse::<u32>().expect("Failed to parse hour!"); },
+            "-m" | "--minute" => { target_datetime[4] = args[i+1].parse::<u32>().expect("Failed to parse minute!"); },
+            "-s" | "--second" => { target_datetime[5] = args[i+1].parse::<u32>().expect("Failed to parse second!"); },
             _ => {  }
         }
     }
@@ -105,11 +105,12 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
     {
         match args[i].as_str()
         {
-            "-s" => { notif["title"] = json::JsonValue::String(args[i+1].to_string()); },
-            "-b" => { notif["body"] = json::JsonValue::String(args[i+1].to_string()); },
-            "-i" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
-            "-u" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into()); },
-            "-t" => { notif["time"] = json::JsonValue::String(countdown_to_time(&args[i+1])); },
+            "-t" | "--title" => { notif["title"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-b" | "--body" => { notif["body"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-i" | "--icon" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-u" | "--urgency" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into()); },
+            "-c" | "--countdown" => { notif["time"] = json::JsonValue::String(countdown_to_time(&args[i+1])); },
+            // C is for countdown here
             _ => {  }
         }
     }
@@ -199,11 +200,9 @@ fn main()
     // Check what they want to do
     match mode.as_str()
     {
-        "s" => { queue_single(&mut entry_dir); },
-        "i" => { queue_instant(&mut entry_dir); },
-        "r" => { println! ("You've selected reccurant mode"); },
+        "s" | "single" => { queue_single(&mut entry_dir); },
+        "i" | "instant" => { queue_instant(&mut entry_dir); },
+        "r" | "reccuring" => { println! ("You've selected reccurant mode"); },
         _ => { println! ("Please enter a valid mode"); }
     }
-
-    // Notification::new().summary("Title here").body("This is the body of the notification").icon("/home/jake/downloads/ogayu.jpg").show().expect("Some sort of error occurred!");
 }
