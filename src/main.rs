@@ -7,7 +7,7 @@ extern crate home;
 use chrono::{Datelike, Timelike, TimeZone};
 use std::io::{Read, Write};
 
-// Any globals
+// Any globals go here
 const RREMIND_SUFFIX: &str = ".rremind";
 
 // Take a nw-nd-nh-nm-ns and return the seconds
@@ -15,44 +15,51 @@ fn countdown_to_time(req_time: &String) -> String
 {
     let mut total_secs: u64 = 0;
 
+    // Split the passed string at '-', each part will be parsed for [value][length_identifier]
     for seg in req_time.split("-")
     {
         let mut checkable_seg = seg.to_string();
         let date_id = checkable_seg.pop().unwrap_or('m');
         match date_id
         {
-            'w' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 604800; },
-            'd' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 86400; },
-            'h' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 3600; },
-            'm' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 60; },
-            's' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0); },
-            _ => { eprintln! ("DateTime identifier '{}' not recognized, ignoring option!", date_id); }
+            // We're only allowing options that have a constant value, ie no months (30 days vs 31), no years (leap years), etc
+            'w' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 604800; }, // weeks
+            'd' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 86400; }, // days
+            'h' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 3600; }, // hours
+            'm' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0) * 60; }, // minutes
+            's' => { total_secs += checkable_seg.parse::<u64>().unwrap_or(0); }, // seconds
+            _ => { eprintln! ("DateTime identifier '{}' not recognized, ignoring option!", date_id); } // not recognized, skip segment
         }
     }
 
     // Now we have the total seconds - add it to the time now and format it properly
     let target_time = chrono::Local::now() + chrono::Duration::seconds(total_secs as i64);
 
+    // Format and return the datetime in a way that we can understand later
     let formatted_datetime = format! ("{}_{}_{}_{}_{}_{}", target_time.year(), target_time.month(), target_time.day(), target_time.hour(), target_time.minute(), target_time.second());
-
     formatted_datetime
 }
 
+// Parse the user's options and add a single entry
 fn queue_single(entry_dir: &mut std::path::PathBuf)
 {
+    // Get the cli args, skipping the first few args that'll always be the same
     let args: Vec<String> = std::env::args().skip(3).collect();
 
+    // Create a default notification object
     let mut notif = json::object!
     {
         title: "rremind",
         body: "You did not set any body text for this reminder",
-        icon: "/home/jake/downloads/ogayu.jpg",
+        icon: "/home/jake/downloads/ogayu.jpg", // please remember to change this
         urgency: 1,
-        time: "120"
+        time: "120" // the default time will be 120 seconds
     };
 
+    // An array of u32s that represent yyyy, mm, dd, hh, mm, ss for when to send the notification
     let mut target_datetime = [chrono::Local::now().year() as u32, chrono::Local::now().month(), chrono::Local::now().day(), chrono::Local::now().hour(), chrono::Local::now().minute(), chrono::Local::now().second()];
 
+    // Parse all the user's arguments
     for i in 0..args.len()
     {
         match args[i].as_str()
@@ -71,36 +78,49 @@ fn queue_single(entry_dir: &mut std::path::PathBuf)
         }
     }
 
+    // Format the datetime to send the notification
     notif["time"] = json::JsonValue::String(format! ("{}_{}_{}_{}_{}_{}", target_datetime[0], target_datetime[1], target_datetime[2], target_datetime[3], target_datetime[4], target_datetime[5]));
 
+    // Write the actual notification entry
     write_notif(notif, entry_dir);
-
+    println! ("Added notification to queue. Make sure you start the daemon!");
 }
 
+// Take an object and write it to the entry_dir
 fn write_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
 {
-    std::fs::create_dir_all(&entry_dir).unwrap();
+    // Create the directory recursively
+    std::fs::create_dir_all(&entry_dir).expect("Failed to create entry directory! Do you have permission?");
+    
+    // Create the unique name of the entry, which will be [title].[time since unix epoch].rremind
     let mut entry_name = notif["title"].to_string() + "." + &chrono::Local::now().timestamp().to_string();
     entry_name.push_str(RREMIND_SUFFIX);
+    
+    // Add the file to save the entry to to the path
     entry_dir.push(entry_name);
+    
+    // Create the file and write all the info to it
     let mut entry_file = std::fs::File::create(&entry_dir).unwrap();
     entry_file.write_all(notif.dump().as_bytes()).unwrap();    
 }
 
-// The user has selected instant mode
+// Add an instant notification to the queue
 fn queue_instant(entry_dir: &mut std::path::PathBuf)
 {
+    // Get the cli args, skipping the first few args that'll always be the same
     let args: Vec<String> = std::env::args().skip(3).collect();
 
+    // Create a default notification object
     let mut notif = json::object!
     {
         title: "rremind",
         body: "You did not set any body text for this reminder",
-        icon: "/home/jake/downloads/ogayu.jpg",
+        icon: "/home/jake/downloads/ogayu.jpg", // please remember to change this
         urgency: 1,
-        time: "120"
+        time: "120" // default time is 2 minutes out
     };
 
+    // Parse all the user's arguments
     for i in 0..args.len()
     {
         match args[i].as_str()
@@ -110,72 +130,88 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
             "-i" | "--icon" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
             "-u" | "--urgency" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into()); },
             "-c" | "--countdown" => { notif["time"] = json::JsonValue::String(countdown_to_time(&args[i+1])); },
-            // C is for countdown here
             _ => {  }
         }
     }
     
+    // Write the notification and start the daemon
     write_notif(notif, entry_dir);
     queue_start(true, entry_dir);
 }
 
+// Check some things and start the daemon
 fn queue_start(is_async: bool, entry_dir: &std::path::PathBuf)
 {
+    // Get the ouput of `pgrep rremind` and remove the last one (which will be this session)
     let pgrep_out = String::from_utf8(std::process::Command::new("pgrep").arg("rremind").output().expect("failed to pgrep").stdout).unwrap();
     let mut split_pgrep = pgrep_out.split("\n").filter(|i|i != &"").collect::<Vec<&str>>();
     split_pgrep.pop();
 
+    // Kill all other instances of rremind so we don't send doubles
     for pid in split_pgrep.into_iter() { std::process::Command::new("kill").arg(pid).spawn().expect("Failed to kill existing instance of rremind!"); }
 
+    // Depending on is_async, either start the program synchronously or asynchronously
     if is_async { async_process::Command::new("./rremind").arg("start").spawn().expect("failed to start as daemon!"); std::process::exit(0); }
     else { start_loop(entry_dir); }
 }
 
-// This function will start the periodic loop that checks for notifications
+// Start the periodic loop that sends the notifications
 fn start_loop(entry_dir: &std::path::PathBuf)
 {
     loop
     {
-        //First, iterate through all the files in the config dir
+        // Go through each file in the config dir
         for current_entry_attempt in std::fs::read_dir(entry_dir.as_path()).unwrap()
         {
+            // Make sure we want to parse this entry
             let current_entry = match current_entry_attempt
             {
+                // If it's a directory, skip it. Otherwise, set the current entry to the path of the file
                 Ok(..) => { 
                     let unwrapped_item = current_entry_attempt.unwrap();
                     if unwrapped_item.path().is_dir() { continue; }
                     else { unwrapped_item.path() }
                 },
+                // If it's any kind of error, skip the file
                 Err(..) => { continue; }
             };
+            
+            // It would have continued if there was an error, so we can unwrap it freely
+            // Read the entire entry to a String
             let mut current_file = std::fs::File::open(current_entry.as_path()).unwrap();
             let mut result_string = String::new();
             current_file.read_to_string(&mut result_string).unwrap();
             
+            // Parse the contents of the entry into a json object
             let notif_read = json::parse(&result_string);
             if let Err(e) = notif_read { eprintln! ("Failed to read contents: {}", e); continue; }
-            let notif = notif_read.unwrap();
+            let notif = notif_read.expect("Failed to parse JSON, failed to detect error!");
             
-            // Check if it's time to notify
+            // Parse the urgency
+            let req_urgency = match &notif["urgency"].as_i8().unwrap_or(1)
+             {
+                 2 => notify_rust::Urgency::Normal,
+                 3 => notify_rust::Urgency::Critical,
+                 _ => notify_rust::Urgency::Low // Default is 1
+             };
+            
+            // Get the time to notify as a chrono time
             let time_string = notif["time"].to_string();
             let time_vec = time_string.split("_").collect::<Vec<&str>>();
-            
             let wanted_date = chrono::Local.ymd(time_vec[0].parse::<i32>().expect("Failed to parse year"), time_vec[1].parse::<u32>().expect("Failed to parse month"), time_vec[2].parse::<u32>().expect("Failed to parse day")).and_hms(time_vec[3].parse::<u32>().expect("Failed to parse hour"), time_vec[4].parse::<u32>().expect("Failed to parse minute"), time_vec[5].parse::<u32>().expect("Failed to parse seconds"));
+            
+            // Check if the time from now to the unix epoch is the same as (or greater than) the wanted time to the unix epoch
             let is_time = wanted_date.timestamp() <= chrono::Local::now().timestamp();
             
+            // If it's time to notify, send the notification and delete the entry
             if is_time
             {
-                let req_urgency = match &notif["urgency"].as_i8().unwrap_or(1)
-                {
-                    2 => notify_rust::Urgency::Normal,
-                    3 => notify_rust::Urgency::Critical,
-                    _ => notify_rust::Urgency::Low
-                };
                 notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
                 std::fs::remove_file(current_entry.as_path()).unwrap();
             }
         }
-        std::thread::sleep(std::time::Duration::from_millis(900));
+        // Wait some time to check again
+        std::thread::sleep(std::time::Duration::from_millis(950));
     }
 }
 
