@@ -51,7 +51,7 @@ fn queue_single(entry_dir: &mut std::path::PathBuf)
     {
         title: "rremind",
         body: "You did not set any body text for this reminder",
-        icon: "/home/jake/downloads/ogayu.jpg", // please remember to change this
+        icon: "dialog-information",
         urgency: 1,
         time: "120" // the default time will be 120 seconds
     };
@@ -115,7 +115,7 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
     {
         title: "rremind",
         body: "You did not set any body text for this reminder",
-        icon: "/home/jake/downloads/ogayu.jpg", // please remember to change this
+        icon: "dialog-information",
         urgency: 1,
         time: "120" // default time is 2 minutes out
     };
