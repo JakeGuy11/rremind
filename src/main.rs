@@ -120,6 +120,8 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
         time: "120" // default time is 2 minutes out
     };
 
+    let mut target_seconds: u64 = 0;
+
     // Parse all the user's arguments
     for i in 0..args.len()
     {
@@ -129,7 +131,11 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
             "-b" | "--body" => { notif["body"] = json::JsonValue::String(args[i+1].to_string()); },
             "-i" | "--icon" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
             "-u" | "--urgency" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<i32>().unwrap_or(1).into()); },
-            "-c" | "--countdown" => { notif["time"] = json::JsonValue::String(countdown_to_time(&args[i+1])); },
+            "-w" | "--week" => { target_seconds += args[i+1].parse::<u64>().expect("Failed to parse requested time for weeks") * 604800; },
+            "-d" | "--day" => { target_seconds += args[i+1].parse::<u64>().expect("Failed to parse requested time for days") * 86400; },
+            "-h" | "--hour" => { target_seconds += args[i+1].parse::<u64>().expect("Failed to parse requested time for hours") * 3600; },
+            "-m" | "--minute" => { target_seconds += args[i+1].parse::<u64>().expect("Failed to parse requested time for minutes") * 60; },
+            "-s" | "--second" => { target_seconds += args[i+1].parse::<u64>().expect("Failed to parse requested time for seconds"); },
             _ => {  }
         }
     }
