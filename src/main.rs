@@ -11,7 +11,7 @@ use std::io::{Read, Write};
 const RREMIND_SUFFIX: &str = ".rremind";
 
 // Take a nw-nd-nh-nm-ns and return the seconds
-fn countdown_to_time(req_time: &String) -> String
+fn _countdown_to_time(req_time: &String) -> String
 {
     let mut total_secs: u64 = 0;
 
@@ -139,6 +139,10 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
             _ => {  }
         }
     }
+
+    let target_time = chrono::Local::now() + chrono::Duration::seconds(target_seconds as i64);
+
+    notif["time"] = json::JsonValue::String(format! ("{}_{}_{}_{}_{}_{}", target_time.year(), target_time.month(), target_time.day(), target_time.hour(), target_time.minute(), target_time.second()));
     
     // Write the notification and start the daemon
     write_notif(notif, entry_dir);
