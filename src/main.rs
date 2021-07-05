@@ -327,13 +327,16 @@ fn start_loop(entry_dir: &std::path::PathBuf)
              let time_now = [chrono::Local::now().hour(), chrono::Local::now().minute(), chrono::Local::now().second()];
              let target_time = [notif["hour"].as_u32().unwrap(), notif["min"].as_u32().unwrap(), notif["sec"].as_u32().unwrap()];
 
-             //match notif["rec_mode"].parse::<u32>().unwrap()
-             //{
-             //    1 =>
-             //    {
-             //    },
-
-             //}            
+             match notif["rec_mode"].as_u32().unwrap()
+             {
+                 1 => { // It's a daily notification
+                     if target_time == time_now
+                     {
+                        notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
+                     }
+                 },
+                 _ => { panic! ("Failed to recognize recurrance mode!"); }
+             }            
         }
 
         // Wait some time to check again
