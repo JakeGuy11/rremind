@@ -232,6 +232,9 @@ fn queue_start(is_async: bool, entry_dir: &std::path::PathBuf)
 // Start the periodic loop that sends the notifications
 fn start_loop(entry_dir: &std::path::PathBuf)
 {
+    // Define the recurring path
+    let rec_path = &mut std::path::PathBuf::from(entry_dir);
+    rec_path.push("recurring");
     loop
     {
         // Go through each file in the config dir
@@ -268,7 +271,7 @@ fn start_loop(entry_dir: &std::path::PathBuf)
                  3 => notify_rust::Urgency::Critical,
                  _ => notify_rust::Urgency::Low // Default is 1
              };
-            
+
             // Get the time to notify as a chrono time
             let time_string = notif["time"].to_string();
             let time_vec = time_string.split("_").collect::<Vec<&str>>();
@@ -276,7 +279,7 @@ fn start_loop(entry_dir: &std::path::PathBuf)
             
             // Check if the time from now to the unix epoch is the same as (or greater than) the wanted time to the unix epoch
             let is_time = wanted_date.timestamp() <= chrono::Local::now().timestamp();
-            
+        
             // If it's time to notify, send the notification and delete the entry
             if is_time
             {
@@ -284,6 +287,55 @@ fn start_loop(entry_dir: &std::path::PathBuf)
                 std::fs::remove_file(current_entry.as_path()).unwrap();
             }
         }
+
+        // Now parse all the recursive entries
+        for current_entry_attempt in std::fs::read_dir(rec_path.as_path()).unwrap()
+        {
+            // Make sure we want to parse this entry
+            let current_entry = match current_entry_attempt
+            {
+                // Skip the directories
+                Ok(..) => {
+                    let unwrapped_item = current_entry_attempt.unwrap();
+                    if unwrapped_item.path().is_dir() { continue; }
+                    else { unwrapped_item.path() }
+                },
+                // If there's an error, skip it
+                Err(..) => { continue; }
+            };
+            
+            // It would have continued if there was an error, so we can unwrap it freely
+            // Read the entire entry to a String
+            let mut current_file = std::fs::File::open(current_entry.as_path()).unwrap();
+            let mut result_string = String::new();
+            current_file.read_to_string(&mut result_string).unwrap();
+            
+            // Parse the contents of the entry into a json object
+            let notif_read = json::parse(&result_string);
+            if let Err(e) = notif_read { eprintln! ("Failed to read contents: {}", e); continue; }
+            let notif = notif_read.expect("Failed to parse JSON, failed to detect error!");
+            
+            // Parse the urgency
+            let req_urgency = match &notif["urgency"].as_i8().unwrap_or(1)
+             {
+                 2 => notify_rust::Urgency::Normal,
+                 3 => notify_rust::Urgency::Critical,
+                 _ => notify_rust::Urgency::Low // Default is 1
+             };
+             
+             // Set the actual times
+             let time_now = [chrono::Local::now().hour(), chrono::Local::now().minute(), chrono::Local::now().second()];
+             let target_time = [notif["hour"].as_u32().unwrap(), notif["min"].as_u32().unwrap(), notif["sec"].as_u32().unwrap()];
+
+             //match notif["rec_mode"].parse::<u32>().unwrap()
+             //{
+             //    1 =>
+             //    {
+             //    },
+
+             //}            
+        }
+
         // Wait some time to check again
         std::thread::sleep(std::time::Duration::from_millis(950));
     }
