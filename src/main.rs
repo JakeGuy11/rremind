@@ -40,6 +40,70 @@ fn _countdown_to_time(req_time: &String) -> String
     formatted_datetime
 }
 
+// Parse the user's options and add a recurring entry
+fn queue_recurring(entry_dir: &mut std::path::PathBuf)
+{
+    // First, add a directory for recurring entries
+    entry_dir.push("recurring");
+
+    // Define which recurrance mode to use
+    let rec_mode = match std::env::args().nth(3).unwrap().as_str()
+    {
+        "d" | "daily" => { 1 },
+        "w" | "weekly" => { 2 },
+        "m" | "monthly" => { 3 },
+        "wd" | "weekdays" => { 4 },
+        _ => { panic! ("You must set a valid recurrance mode!"); }
+    };
+
+    // Define a default notification
+    let mut notif = json::object!
+    {
+        title: "rremind",
+        body: "You did not set any body text for this reminder",
+        icon: "dialog-information",
+        urgency: 1,
+        rec_mode: 2, // Default recurrance mode is weekly
+        // Here's a little explanation as to how the reccurance will work:
+        // The HMS will always be filled out
+        // If it's a daily (or weekday) reminder, just the time is needed
+        // If it's weekly, a weekday must also be provided and any day_of_month will be ignored
+        // If it's monthly, a day_of_month must be provided and any weekday will be ignored
+        hour: 12,
+        min: 0, // Default time is noon
+        sec: 0,
+        weekday: "mon", // Default date is monday
+        day_of_month: 1, // Default is the first of every month
+    };
+
+    // Get the rest of the cli args
+    let args: Vec<String> = std::env::args().skip(4).collect();
+
+    // Go through all the args
+    for i in 0..args.len()
+    {
+        match args[i].as_str()
+        {
+            "-t" | "--title" => { notif["title"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-b" | "--body" => { notif["body"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-i" | "--icon" => { notif["icon"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-u" | "--urgency" => { notif["urgency"] = json::JsonValue::Number(args[i+1].parse::<u32>().expect("Failed to parse urgency!").into()); },
+            "-h" | "--hour" => { notif["hour"] = json::JsonValue::Number(args[i+1].parse::<u32>().expect("Failed to parse hour!").into()); },
+            "-m" | "--minute" => { notif["min"] = json::JsonValue::Number(args[i+1].parse::<u32>().expect("Failed to parse minute!").into()); },
+            "-s" | "--second" => { notif["sec"] = json::JsonValue::Number(args[i+1].parse::<u32>().expect("Failed to parse second!").into()); },
+            "-w" | "--weekday" => { notif["weekday"] = json::JsonValue::String(args[i+1].to_string()); },
+            "-d" | "--day" => { notif["day_of_month"] = json::JsonValue::Number(args[i+1].parse::<u32>().expect("Failed to parse day of the month!").into()); },
+            _ => {  }
+        }
+    }
+
+    // Assign the recurrance mode
+    notif["rec_mode"] = json::JsonValue::Number(rec_mode.into());
+
+    write_notif(notif, entry_dir);
+
+}
+
 // Parse the user's options and add a single entry
 fn queue_single(entry_dir: &mut std::path::PathBuf)
 {
@@ -248,7 +312,7 @@ fn main()
     {
         "s" | "single" => { queue_single(&mut entry_dir); },
         "i" | "instant" => { queue_instant(&mut entry_dir); },
-        "r" | "reccuring" => { println! ("You've selected reccurant mode"); },
+        "r" | "reccuring" => { queue_recurring(&mut entry_dir); },
         _ => { println! ("Please enter a valid mode"); }
     }
 }
