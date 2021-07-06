@@ -335,6 +335,24 @@ fn start_loop(entry_dir: &std::path::PathBuf)
                         notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
                      }
                  },
+                 2 => { // It's a weekly notification
+                     // Determine if it's the right weekday
+                     let req_weekday = match notif["weekday"].to_string().to_lowercase().as_str()
+                     {
+                         "mon" | "monday" => chrono::Weekday::Mon,
+                         "tue" | "tuesday" => chrono::Weekday::Tue,
+                         "wed" | "wednesday" => chrono::Weekday::Wed,
+                         "thu" | "thursday" => chrono::Weekday::Thu,
+                         "fri" | "friday" => chrono::Weekday::Fri,
+                         "sat" | "saturday" => chrono::Weekday::Sat,
+                         "sun" | "sunday" => chrono::Weekday::Sun,
+                         _ => { panic! ("Weekday not recognized!"); }
+                     };
+                     if target_time == time_now && chrono::Local::now().weekday() == req_weekday
+                     {
+                         notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
+                     }
+                 },
                  _ => { panic! ("Failed to recognize recurrance mode!"); }
              }            
         }
