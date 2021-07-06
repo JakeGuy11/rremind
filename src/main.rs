@@ -353,6 +353,12 @@ fn start_loop(entry_dir: &std::path::PathBuf)
                          notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
                      }
                  },
+                 3 => { // It's a monthly notification
+                     if target_time == time_now && chrono::Local::now().day() == notif["day_of_month"].as_u32().expect("Failed to parse requested day of the month!")
+                     {
+                         notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
+                     }
+                 }
                  _ => { panic! ("Failed to recognize recurrance mode!"); }
              }            
         }
