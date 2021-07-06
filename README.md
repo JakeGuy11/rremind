@@ -39,13 +39,50 @@ The time specification method lets you specify the specific datetime parameters 
 ```bash
 # Send a notification with the specified fields on August 3rd, 2021 at 5:30 PM, with the seconds the same as the current system time's seconds
 rremind add s -t "This is my title" -b "this is my body" -i ~/path/to/icon -o 8 -d 3 -h 17 -m 30
+
 # Don't forget to start the daemon
 rremind start
 ```
 
 ### Recurrance
 
-There is currently no recurrance mode.
+Within recurrance mode, there are 4 sub-modes, each indicating how often you would like the notifications; daily, weekdaily, weekly and monthly. The standard notification fields are available (`t` to specify a title, `-b` to specify a body, `-i` to specify an icon, and `-u` to specify an urgency between 1 and 3). However, unlike other modes, recurrance mode requires another argument, the fourth argument (including the rremind binary) must indicate which sub-mode to use; `wd` for weekdaily, `d` for daily, `w` for weekly, and `m` for monthly. Every sub-mode needs the time of day to be specified, using `-h` for hour, `-m` for minute, and `-s` for second. Reccurance mode does not start the daemon automatically.
+
+#### Weekdaily/Daily
+
+Weekdaily and daily do not need anything special - they send a notification every day (for weekdaily, skipping Saturday and Sunday) at the specified time.
+```bash
+# Send a notification every monday through friday at 10:30 AM
+rremind add r wd -t "This is my title" -b "this is my body" -i ~/path/to/icon -h 10 -m 30
+
+# Send a notification every day at 10:30 AM
+rremind add r d -t "This is my title" -b "this is my body" -i ~/path/to/icon -h 10 -m 30
+
+# Don't forget to start the daemon
+rremind start
+```
+
+#### Weekly
+
+Weekly requires that you provide the day of the week (using `-w`) along with the time to send it. It recognizes `mon`/`monday`, `tue`/`tuesday`, `wed`/`wednesday`, `thu`/`thursday`, `fri`/`friday`, `sat`/`saturday`, and `sun`/`sunday`. It is **not** case sensitive.
+```bash
+# Send a notification every tuesday at 6:00 PM
+rremind add r w -t "This is my title" -b "this is my body" -i ~/path/to/icon -h 18 -w tue
+
+# Don't forget to start the daemon
+rremind start
+```
+
+#### Monthly
+
+Monthly requires that you provide the day of the month (using `-d`) along with the time to send it. It accepts only a number as the day - there are no generic terms for things like "last day of the month". 
+```bash
+# Send a notification on the 11th pf every month at 10:00 PM
+rremind add r w -t "This is my title" -b "this is my body" -i ~/path/to/icon -h 22 -d 11
+
+# Don't forget to start the daemon
+rremind start
+```
 
 # Contact Me
 
