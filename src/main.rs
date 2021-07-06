@@ -46,14 +46,14 @@ fn queue_recurring(entry_dir: &mut std::path::PathBuf)
     // First, add a directory for recurring entries
     entry_dir.push("recurring");
 
-    // Define which recurrance mode to use
+    // Define which recurrence mode to use
     let rec_mode = match std::env::args().nth(3).unwrap().as_str()
     {
         "d" | "daily" => { 1 },
         "w" | "weekly" => { 2 },
         "m" | "monthly" => { 3 },
         "wd" | "weekdays" => { 4 },
-        _ => { panic! ("You must set a valid recurrance mode!"); }
+        _ => { panic! ("You must set a valid recurrence mode!"); }
     };
 
     // Define a default notification
@@ -63,8 +63,8 @@ fn queue_recurring(entry_dir: &mut std::path::PathBuf)
         body: "You did not set any body text for this reminder",
         icon: "dialog-information",
         urgency: 1,
-        rec_mode: 2, // Default recurrance mode is weekly
-        // Here's a little explanation as to how the reccurance will work:
+        rec_mode: 2, // Default recurrence mode is weekly
+        // Here's a little explanation as to how the recurrence will work:
         // The HMS will always be filled out
         // If it's a daily (or weekday) reminder, just the time is needed
         // If it's weekly, a weekday must also be provided and any day_of_month will be ignored
@@ -97,7 +97,7 @@ fn queue_recurring(entry_dir: &mut std::path::PathBuf)
         }
     }
 
-    // Assign the recurrance mode
+    // Assign the recurrence mode
     notif["rec_mode"] = json::JsonValue::Number(rec_mode.into());
 
     write_notif(notif, entry_dir);
@@ -292,7 +292,7 @@ fn start_loop(entry_dir: &std::path::PathBuf)
             }
         }
 
-        // Now parse all the recursive entries
+        // Now parse all the recurring entries
         for current_entry_attempt in std::fs::read_dir(rec_path.as_path()).unwrap()
         {
             // Make sure we want to parse this entry
@@ -369,7 +369,7 @@ fn start_loop(entry_dir: &std::path::PathBuf)
                         notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
                     }
                 },
-                _ => { panic! ("Failed to recognize recurrance mode!"); }
+                _ => { panic! ("Failed to recognize recurrence mode!"); }
             }            
         }
 
