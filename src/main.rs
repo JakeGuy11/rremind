@@ -155,14 +155,14 @@ fn write_notif(notif: json::JsonValue, entry_dir: &mut std::path::PathBuf)
 {
     // Create the directory recursively
     std::fs::create_dir_all(&entry_dir).expect("Failed to create entry directory! Do you have permission?");
-    
+
     // Create the unique name of the entry, which will be [title].[time since unix epoch].rremind
     let mut entry_name = notif["title"].to_string() + "." + &chrono::Local::now().timestamp().to_string();
     entry_name.push_str(RREMIND_SUFFIX);
-    
+
     // Add the file to save the entry to to the path
     entry_dir.push(entry_name);
-    
+
     // Create the file and write all the info to it
     let mut entry_file = std::fs::File::create(&entry_dir).unwrap();
     entry_file.write_all(notif.dump().as_bytes()).unwrap();    
@@ -207,7 +207,7 @@ fn queue_instant(entry_dir: &mut std::path::PathBuf)
     let target_time = chrono::Local::now() + chrono::Duration::seconds(target_seconds as i64);
 
     notif["time"] = json::JsonValue::String(format! ("{}_{}_{}_{}_{}_{}", target_time.year(), target_time.month(), target_time.day(), target_time.hour(), target_time.minute(), target_time.second()));
-    
+
     // Write the notification and start the daemon
     write_notif(notif, entry_dir);
     queue_start(true, entry_dir);
@@ -252,34 +252,34 @@ fn start_loop(entry_dir: &std::path::PathBuf)
                 // If it's any kind of error, skip the file
                 Err(..) => { continue; }
             };
-            
+
             // It would have continued if there was an error, so we can unwrap it freely
             // Read the entire entry to a String
             let mut current_file = std::fs::File::open(current_entry.as_path()).unwrap();
             let mut result_string = String::new();
             current_file.read_to_string(&mut result_string).unwrap();
-            
+
             // Parse the contents of the entry into a json object
             let notif_read = json::parse(&result_string);
             if let Err(e) = notif_read { eprintln! ("Failed to read contents: {}", e); continue; }
             let notif = notif_read.expect("Failed to parse JSON, failed to detect error!");
-            
+
             // Parse the urgency
             let req_urgency = match &notif["urgency"].as_i8().unwrap_or(1)
-             {
-                 2 => notify_rust::Urgency::Normal,
-                 3 => notify_rust::Urgency::Critical,
-                 _ => notify_rust::Urgency::Low // Default is 1
-             };
+            {
+                2 => notify_rust::Urgency::Normal,
+                3 => notify_rust::Urgency::Critical,
+                _ => notify_rust::Urgency::Low // Default is 1
+            };
 
             // Get the time to notify as a chrono time
             let time_string = notif["time"].to_string();
             let time_vec = time_string.split("_").collect::<Vec<&str>>();
             let wanted_date = chrono::Local.ymd(time_vec[0].parse::<i32>().expect("Failed to parse year"), time_vec[1].parse::<u32>().expect("Failed to parse month"), time_vec[2].parse::<u32>().expect("Failed to parse day")).and_hms(time_vec[3].parse::<u32>().expect("Failed to parse hour"), time_vec[4].parse::<u32>().expect("Failed to parse minute"), time_vec[5].parse::<u32>().expect("Failed to parse seconds"));
-            
+
             // Check if the time from now to the unix epoch is the same as (or greater than) the wanted time to the unix epoch
             let is_time = wanted_date.timestamp() <= chrono::Local::now().timestamp();
-        
+
             // If it's time to notify, send the notification and delete the entry
             if is_time
             {
@@ -303,64 +303,64 @@ fn start_loop(entry_dir: &std::path::PathBuf)
                 // If there's an error, skip it
                 Err(..) => { continue; }
             };
-            
+
             // It would have continued if there was an error, so we can unwrap it freely
             // Read the entire entry to a String
             let mut current_file = std::fs::File::open(current_entry.as_path()).unwrap();
             let mut result_string = String::new();
             current_file.read_to_string(&mut result_string).unwrap();
-            
+
             // Parse the contents of the entry into a json object
             let notif_read = json::parse(&result_string);
             if let Err(e) = notif_read { eprintln! ("Failed to read contents: {}", e); continue; }
             let notif = notif_read.expect("Failed to parse JSON, failed to detect error!");
-            
+
             // Parse the urgency
             let req_urgency = match &notif["urgency"].as_i8().unwrap_or(1)
-             {
-                 2 => notify_rust::Urgency::Normal,
-                 3 => notify_rust::Urgency::Critical,
-                 _ => notify_rust::Urgency::Low // Default is 1
-             };
-             
-             // Set the actual times
-             let time_now = [chrono::Local::now().hour(), chrono::Local::now().minute(), chrono::Local::now().second()];
-             let target_time = [notif["hour"].as_u32().unwrap(), notif["min"].as_u32().unwrap(), notif["sec"].as_u32().unwrap()];
+            {
+                2 => notify_rust::Urgency::Normal,
+                3 => notify_rust::Urgency::Critical,
+                _ => notify_rust::Urgency::Low // Default is 1
+            };
 
-             match notif["rec_mode"].as_u32().unwrap()
-             {
-                 1 => { // It's a daily notification
-                     if target_time == time_now
-                     {
+            // Set the actual times
+            let time_now = [chrono::Local::now().hour(), chrono::Local::now().minute(), chrono::Local::now().second()];
+            let target_time = [notif["hour"].as_u32().unwrap(), notif["min"].as_u32().unwrap(), notif["sec"].as_u32().unwrap()];
+
+            match notif["rec_mode"].as_u32().unwrap()
+            {
+                1 => { // It's a daily notification
+                    if target_time == time_now
+                    {
                         notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
-                     }
-                 },
-                 2 => { // It's a weekly notification
-                     // Determine if it's the right weekday
-                     let req_weekday = match notif["weekday"].to_string().to_lowercase().as_str()
-                     {
-                         "mon" | "monday" => chrono::Weekday::Mon,
-                         "tue" | "tuesday" => chrono::Weekday::Tue,
-                         "wed" | "wednesday" => chrono::Weekday::Wed,
-                         "thu" | "thursday" => chrono::Weekday::Thu,
-                         "fri" | "friday" => chrono::Weekday::Fri,
-                         "sat" | "saturday" => chrono::Weekday::Sat,
-                         "sun" | "sunday" => chrono::Weekday::Sun,
-                         _ => { panic! ("Weekday not recognized!"); }
-                     };
-                     if target_time == time_now && chrono::Local::now().weekday() == req_weekday
-                     {
-                         notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
-                     }
-                 },
-                 3 => { // It's a monthly notification
-                     if target_time == time_now && chrono::Local::now().day() == notif["day_of_month"].as_u32().expect("Failed to parse requested day of the month!")
-                     {
-                         notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
-                     }
-                 }
-                 _ => { panic! ("Failed to recognize recurrance mode!"); }
-             }            
+                    }
+                },
+                2 => { // It's a weekly notification
+                    // Determine if it's the right weekday
+                    let req_weekday = match notif["weekday"].to_string().to_lowercase().as_str()
+                    {
+                        "mon" | "monday" => chrono::Weekday::Mon,
+                        "tue" | "tuesday" => chrono::Weekday::Tue,
+                        "wed" | "wednesday" => chrono::Weekday::Wed,
+                        "thu" | "thursday" => chrono::Weekday::Thu,
+                        "fri" | "friday" => chrono::Weekday::Fri,
+                        "sat" | "saturday" => chrono::Weekday::Sat,
+                        "sun" | "sunday" => chrono::Weekday::Sun,
+                        _ => { panic! ("Weekday not recognized!"); }
+                    };
+                    if target_time == time_now && chrono::Local::now().weekday() == req_weekday
+                    {
+                        notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
+                    }
+                },
+                3 => { // It's a monthly notification
+                    if target_time == time_now && chrono::Local::now().day() == notif["day_of_month"].as_u32().expect("Failed to parse requested day of the month!")
+                    {
+                        notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
+                    }
+                },
+                _ => { panic! ("Failed to recognize recurrance mode!"); }
+            }            
         }
 
         // Wait some time to check again
@@ -395,3 +395,4 @@ fn main()
         _ => { println! ("Please enter a valid mode"); }
     }
 }
+
