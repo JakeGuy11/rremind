@@ -378,6 +378,14 @@ fn start_loop(entry_dir: &std::path::PathBuf)
     }
 }
 
+fn show_help()
+{
+    let mut help_file = std::fs::File::open("./help.txt").expect("Failed to locate help file! Is it in your current directory?");
+    let mut help_message = String::new();
+    help_file.read_to_string(&mut help_message).expect("Failed to read help message! Do you have read permissions?");
+    println! ("{}", help_message);
+}
+
 fn main()
 {
     // Set the entry dir
@@ -387,11 +395,12 @@ fn main()
     entry_dir.push("rremind");
 
     // Check if we want to start in add or start mode
-    let intent = std::env::args().nth(1).unwrap_or(String::from("start"));
+    let intent = std::env::args().nth(1).unwrap_or(String::from("help"));
 
     // If the user wants to start, call start_loop
     if &intent == "start" { queue_start(false, &entry_dir); }
-    else if &intent != "add" { eprintln! ("You must define a valid intent!"); std::process::exit(1); }
+    else if &intent == "help" || &intent == "-h" || &intent == "--help" { show_help(); std::process::exit(0); }
+    else if &intent != "add" { eprintln! ("You must define a valid intent! Use `rremind --help` for more information."); std::process::exit(1); }
 
     // Check what add mode they want to use
     let mode = std::env::args().nth(2).unwrap_or(String::from("undefined"));
