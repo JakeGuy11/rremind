@@ -235,6 +235,10 @@ fn start_loop(entry_dir: &std::path::PathBuf)
     // Define the recurring path
     let rec_path = &mut std::path::PathBuf::from(entry_dir);
     rec_path.push("recurring");
+
+    // Create all the dirs, just in case they don't already exist
+    std::fs::create_dir_all(&entry_dir).expect("Failed to create entry directory! Do you have permission?");
+    std::fs::create_dir_all(&rec_path).expect("Failed to create recurring entry directory! Do you have permission?");
     loop
     {
         // Go through each file in the config dir
