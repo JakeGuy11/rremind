@@ -12,11 +12,11 @@ There are currenly no official releases. It will likely be a little while before
 
 # How to Use
 
-As mentioned above, there are four main ways to use rremind; Instant mode, Single mode Recurrance mode and Daemon mode.
+As mentioned above, there are four main ways to use rremind; Instant mode, Single mode Recurrence mode and Daemon mode.
 
 ### Daemon Mode
 
-Daemon mode starts the program in the background, checking the queue every second for whether or not to send a notification. A notification will be sent if the specified time is or is before the current system time. Non-recurrant entries will be deleted as soon as the notification is sent. Once started in daemon mode, all other instances of rremind are killed. All entries are stored in `~/.local/share/rremind/`. Finally, note that rremind's daemon mode isn't technically a daemon, but I couldn't think of any better way to describe it.
+Daemon mode starts the program in the background, checking the queue every second for whether or not to send a notification. A notification will be sent if the specified time is or is before the current system time. Non-recurrent entries will be deleted as soon as the notification is sent. Once started in daemon mode, all other instances of rremind are killed. All entries are stored in `~/.local/share/rremind/`. Finally, note that rremind's daemon mode isn't technically a daemon, but I couldn't think of any better way to describe it.
 ```bash
 rremind start
 ```
@@ -44,9 +44,9 @@ rremind add s -t "This is my title" -b "this is my body" -i ~/path/to/icon -o 8 
 rremind start
 ```
 
-### Recurrance
+### Recurrence
 
-Within recurrance mode, there are 4 sub-modes, each indicating how often you would like the notifications; daily, weekdaily, weekly and monthly. The standard notification fields are available (`t` to specify a title, `-b` to specify a body, `-i` to specify an icon, and `-u` to specify an urgency between 1 and 3). However, unlike other modes, recurrance mode requires another argument, the fourth argument (including the rremind binary) must indicate which sub-mode to use; `wd` for weekdaily, `d` for daily, `w` for weekly, and `m` for monthly. Every sub-mode needs the time of day to be specified, using `-h` for hour, `-m` for minute, and `-s` for second. Reccurance mode does not start the daemon automatically.
+Within recurrence mode, there are 4 sub-modes, each indicating how often you would like the notifications; daily, weekdaily, weekly and monthly. The standard notification fields are available (`t` to specify a title, `-b` to specify a body, `-i` to specify an icon, and `-u` to specify an urgency between 1 and 3). However, unlike other modes, recurrence mode requires another argument, the fourth argument (including the rremind binary) must indicate which sub-mode to use; `wd` for weekdaily, `d` for daily, `w` for weekly, and `m` for monthly. Every sub-mode needs the time of day to be specified, using `-h` for hour, `-m` for minute, and `-s` for second. Reccurrence mode does not start the daemon automatically.
 
 #### Weekdaily/Daily
 
