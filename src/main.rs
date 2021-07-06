@@ -359,6 +359,12 @@ fn start_loop(entry_dir: &std::path::PathBuf)
                         notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
                     }
                 },
+                4 => { // It's a weekday notification
+                    if target_time == time_now && chrono::Local::now().weekday() != chrono::Weekday::Sat && chrono::Local::now().weekday() != chrono::Weekday::Sun
+                    {
+                        notify_rust::Notification::new().summary(&notif["title"].to_string()).body(&notif["body"].to_string()).icon(&notif["icon"].to_string()).urgency(req_urgency).show().unwrap();
+                    }
+                },
                 _ => { panic! ("Failed to recognize recurrance mode!"); }
             }            
         }
