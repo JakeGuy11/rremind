@@ -1,6 +1,37 @@
-rremind <intent> <mode> [options]
+usage: rremind <intent> <mode> [options]
+help: rremind [-h/--help/help]
 
 For more detailed instructions and examples, check out https://github.com/JakeGuy11/rremind/blob/main/README.md (and star the repo while you're there!)
 
+Intents:
+start                   Start the daemon. Does not take additional arguments.
+add                     Add an entry to the queue. Requires a mode and options.
+help                    Show this message. Does not take additional arguments.
+
+Modes:
+i, instant              Add an entry to the queue to be sent in a specific amount of time in the future (referred to as "countdown").
+s, single               Add an entry to the queue to be sent at a specified date and time (referred to as "static datetime").
+r, recurring            Add an entry to the queue to be sent periodically. Requres a sub-mode directly following this option.
+
+Sub-Modes:
+wd, weekdaily           Send the notification every day except for Saturday and Sunday.
+d, daily                Send the notification every day.
+w, weekly               Send the notification on a defined day of the week.
+m, monthly              Send the notification on a defined day of the month.
 
 
+Options:
+Generic:
+-t, --title             The title (technically called summary) for the notification
+-b, --body              The body for the notification
+-i, --icon              The icon for the notification. Can be a path to an image or the name of an icon your notification service will recognize.
+-u, --urgency           A number from 1 to 3 indicating the urgency (1 is Low, 3 is Critical).
+
+Time specific:
+-y, --year              The year A.D. to send the notification. Cannot be used for a countdown.
+-o, --month             The month (1-12) to send the notification. Cannot be used for a countdown.
+-w, --week              The number of weeks. Can only be used for a countdown.
+-d, --day               The number of days for a countdown, or the day of the month for a static datetime. Refers to the day of the week for recurrance mode (mon/tue/wed/thu/fri/sat/sun).
+-h, --hour              The number of hours for a countdown, or the hour of the day for a static datetime (uses 24 hour time).
+-m, --minute            The number of minutes for a countdown, or the minute of the hour for a static datetime.
+-s, --second            The number of seconds for a countdown, or the seconds of the minute for a static datetime.
