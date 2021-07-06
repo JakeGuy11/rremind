@@ -1,0 +1,6 @@
+rremind <intent> <mode> [options]
+
+For more detailed instructions and examples, check out https://github.com/JakeGuy11/rremind/blob/main/README.md (and star the repo while you're there!)
+
+
+
