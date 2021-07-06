@@ -31,7 +31,7 @@ Time specific:
 -y, --year              The year A.D. to send the notification. Cannot be used for a countdown.
 -o, --month             The month (1-12) to send the notification. Cannot be used for a countdown.
 -w, --week              The number of weeks. Can only be used for a countdown.
--d, --day               The number of days for a countdown, or the day of the month for a static datetime. Refers to the day of the week for recurrance mode (mon/tue/wed/thu/fri/sat/sun).
+-d, --day               The number of days for a countdown, or the day of the month for a static datetime. Refers to the day of the week for recurrence mode (mon/tue/wed/thu/fri/sat/sun).
 -h, --hour              The number of hours for a countdown, or the hour of the day for a static datetime (uses 24 hour time).
 -m, --minute            The number of minutes for a countdown, or the minute of the hour for a static datetime.
 -s, --second            The number of seconds for a countdown, or the seconds of the minute for a static datetime.
