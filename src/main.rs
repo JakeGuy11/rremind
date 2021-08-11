@@ -386,6 +386,69 @@ fn show_help()
     println! ("{}", help_message);
 }
 
+fn list_entries(entry_dir: &mut std::path::PathBuf)
+{
+    // Create the directory we're checking
+    std::fs::create_dir_all(&entry_dir).expect("Failed to create entry directory! Do you have permission?");
+
+    println! ("One-time entries:");
+    for current_entry_res in std::fs::read_dir(entry_dir.as_path()).unwrap()
+    {
+        match current_entry_res
+        {
+            Err(_) => { eprintln! ("Failed to read file {:?}, skipping...", current_entry_res); },
+            Ok(current_entry) =>
+            {
+                if std::path::Path::is_dir(&current_entry.path().as_path()) { continue; }
+                let mut current_file = std::fs::File::open(current_entry.path().as_path()).unwrap();
+                let mut result_string = String::new();
+                current_file.read_to_string(&mut result_string).unwrap();
+                let notif_read = json::parse(&result_string);
+                if let Err(e) = notif_read { eprintln! ("Failed to read contents: {}", e); continue; }
+                let notif = notif_read.expect("Failed to parse JSON, failed to detect error!");
+
+                let times_str = notif["time"].to_string();
+                let times = times_str.as_str().split('_').collect::<Vec<_>>();
+
+                println! ("Notification with title \"{}\" and body \"{}\" is scheduled for {:0>2}:{:0>2}:{:0>2} on {:0>2}/{:0>2}/{:0>4} (DD/MM/YYYY) with urgency {} and icon {}",
+                    notif["title"].to_string(),
+                    notif["body"].to_string(),
+                    times[3],
+                    times[4],
+                    times[5],
+                    times[1],
+                    times[2],
+                    times[0],
+                    notif["urgency"].to_string(),
+                    notif["icon"].to_string());
+            }
+        }
+    }
+
+    // Create the directory we're checking
+    entry_dir.push("recurring");
+    std::fs::create_dir_all(&entry_dir).expect("Failed to create entry directory! Do you have permission?");
+
+    println! ("One-time entries:");
+    for current_entry_res in std::fs::read_dir(entry_dir.as_path()).unwrap()
+    {
+        match current_entry_res
+        {
+            Err(_) => { eprintln! ("Failed to read file {:?}, skipping...", current_entry_res); },
+            Ok(current_entry) =>
+            {
+                if std::path::Path::is_dir(&current_entry.path().as_path()) { continue; }
+                let mut current_file = std::fs::File::open(current_entry.path().as_path()).unwrap();
+                let mut result_string = String::new();
+                current_file.read_to_string(&mut result_string).unwrap();
+                let notif_read = json::parse(&result_string);
+                if let Err(e) = notif_read { eprintln! ("Failed to read contents: {}", e); continue; }
+                let notif = notif_read.expect("Failed to parse JSON, failed to detect error!");
+            }
+        }
+    }
+}
+
 fn main()
 {
     // Set the entry dir
@@ -400,6 +463,7 @@ fn main()
     // If the user wants to start, call start_loop
     if &intent == "start" { queue_start(false, &entry_dir); }
     else if &intent == "help" || &intent == "-h" || &intent == "--help" { show_help(); std::process::exit(0); }
+    else if &intent == "list" { list_entries(&mut entry_dir); std::process::exit(0); }
     else if &intent != "add" { eprintln! ("You must define a valid intent! Use `rremind --help` for more information."); std::process::exit(1); }
 
     // Check what add mode they want to use
